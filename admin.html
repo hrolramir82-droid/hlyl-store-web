@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HL&L Store — Administración</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f5f5f5;color:#222}
+header{background:#111;color:#fff;padding:18px 15px}header h1{margin:0;font-size:23px}
+main{max-width:900px;margin:auto;padding:16px}.box{background:#fff;border-radius:14px;padding:18px;margin-bottom:18px;box-shadow:0 2px 10px #0001}
+label{display:block;font-weight:bold;margin:12px 0 6px}input,textarea,select{width:100%;padding:11px;border:1px solid #ccc;border-radius:8px;font-size:16px}textarea{min-height:90px;resize:vertical}
+button{border:0;border-radius:8px;padding:11px 16px;font-size:16px;font-weight:bold;cursor:pointer;margin-top:12px}
+.primary{background:#111;color:#fff}.green{background:#25D366;color:#fff}.danger{background:#d33;color:#fff}.gray{background:#ddd}
+#app{display:none}#msg{margin-top:12px;padding:10px;border-radius:8px;background:#eee;white-space:pre-wrap}
+.item{display:flex;gap:12px;align-items:center;border-top:1px solid #eee;padding:12px 0}
+.item img{width:75px;height:75px;object-fit:cover;border-radius:8px;background:#eee}
+.item-info{flex:1}.item-info b{display:block}.actions button{margin:3px;padding:8px 10px;font-size:14px}
+#preview{max-width:180px;max-height:180px;display:none;margin-top:10px;border-radius:8px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:600px){.row{grid-template-columns:1fr}}
+.small{font-size:13px;color:#666}
+</style>
+</head>
+<body>
+<header><h1>HL&L Store — Administración</h1></header>
+<main>
+<section id="login" class="box">
+<h2>Ingresar</h2>
+<p class="small">Usa el usuario creado en Supabase.</p>
+<label>Correo</label><input id="email" type="email" autocomplete="username">
+<label>Contraseña</label><input id="password" type="password" autocomplete="current-password">
+<button class="primary" onclick="login()">Ingresar</button>
+<div id="loginMsg"></div>
+</section>
+
+<section id="app">
+<div class="box">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+<h2 id="formTitle">Nuevo producto</h2><button class="gray" onclick="logout()">Salir</button>
+</div>
+<input id="pid" type="hidden">
+<label>Nombre</label><input id="name" placeholder="Ej.: Hoppie 1 litro personalizado">
+<div class="row">
+<div><label>Categoría</label><input id="category" placeholder="Hoppie, Termo, Billetera..."></div>
+<div><label>Capacidad</label><input id="capacity" placeholder="1 litro, 820 ml..."></div>
+</div>
+<div class="row">
+<div><label>Precio (Gs.)</label><input id="price" type="number" min="0"></div>
+<div><label>Stock</label><input id="stock" type="number" min="0"></div>
+</div>
+<label>Colores disponibles</label><input id="colors" placeholder="Negro, rojo, azul">
+<label>Descripción</label><textarea id="description"></textarea>
+<label>Foto</label><input id="image" type="file" accept="image/*" onchange="previewImage()">
+<img id="preview">
+<div>
+<button class="primary" onclick="guardar()">Guardar producto</button>
+<button class="gray" onclick="limpiar()">Limpiar</button>
+</div>
+<div id="msg"></div>
+</div>
+
+<div class="box">
+<h2>Productos publicados</h2>
+<div id="lista">Cargando...</div>
+</div>
+</section>
+</main>
+
+<script>
+const SUPABASE_URL = "https://jdkfitrgaidjudfwjzez.supabase.co";
+const SUPABASE_KEY = "sb_publishable_w_PZQfVAk4XRIOFyjACRcQ_EYltqUiK";
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let currentUser = null;
+
+function msg(t) { document.getElementById("msg").textContent=t; }
+function loginMsg(t) { document.getElementById("loginMsg").textContent=t; }
+
+async function login() {
+  loginMsg("Ingresando...");
+  const email=document.getElementById("email").value.trim();
+  const password=document.getElementById("password").value;
+  const {data,error}=await db.auth.signInWithPassword({email,password});
+  if(error) { loginMsg("Error: "+error.message); return; }
+  currentUser=data.user;
+  const {data:admin,error:adminError}=await db.from("admins").select("user_id").eq("user_id",currentUser.id).maybeSingle();
+  if(adminError || !admin) {
+    await db.auth.signOut();
+    loginMsg("El usuario ingresó, pero no está autorizado como administrador.");
+    return;
+  }
+  document.getElementById("login").style.display="none";
+  document.getElementById("app").style.display="block";
+  await cargarProductos();
+}
+
+async function logout() {
+  await db.auth.signOut();
+  location.reload();
+}
+
+async function cargarProductos() {
+  const lista=document.getElementById("lista");
+  const {data,error}=await db.from("products").select("*").order("created_at",{ascending:false});
+  if(error) { lista.textContent="Error: "+error.message; return; }
+  if(!data.length) { lista.textContent="Todavía no hay productos."; return; }
+  lista.innerHTML=data.map(p=>`
+    <div class="item">
+      ${p.image_url?`<img src="${esc(p.image_url)}" alt="">`:"<div style='width:75px;height:75px;background:#eee;border-radius:8px'></div>"}
+      <div class="item-info"><b>${esc(p.name)}</b>G. ${Number(p.price||0).toLocaleString("es-PY")} · Stock: ${p.stock ?? "-"}</div>
+      <div class="actions">
+        <button class="gray" onclick='editar(${JSON.stringify(p).replace(/'/g,"&#39;")})'>Editar</button>
+        <button class="danger" onclick="eliminar('${p.id}')">Eliminar</button>
+      </div>
+    </div>`).join("");
+}
+
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+}
+
+function limpiar() {
+  ["pid","name","category","capacity","price","stock","colors","description"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("image").value="";
+  document.getElementById("preview").style.display="none";
+  document.getElementById("formTitle").textContent="Nuevo producto";
+  msg("");
+}
+
+function editar(p) {
+  document.getElementById("pid").value=p.id||"";
+  document.getElementById("name").value=p.name||"";
+  document.getElementById("category").value=p.category||"";
+  document.getElementById("capacity").value=p.capacity||"";
+  document.getElementById("price").value=p.price||"";
+  document.getElementById("stock").value=p.stock ?? "";
+  document.getElementById("colors").value=p.colors||"";
+  document.getElementById("description").value=p.description||"";
+  document.getElementById("image").value="";
+  const pr=document.getElementById("preview");
+  if(p.image_url){pr.src=p.image_url;pr.style.display="block";}else pr.style.display="none";
+  document.getElementById("formTitle").textContent="Editar producto";
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function previewImage() {
+  const f=document.getElementById("image").files[0], pr=document.getElementById("preview");
+  if(!f) return;
+  pr.src=URL.createObjectURL(f); pr.style.display="block";
+}
+
+async function subirFoto(file) {
+  const ext=(file.name.split(".").pop()||"jpg").toLowerCase();
+  const path=crypto.randomUUID()+"."+ext;
+  const {error}=await db.storage.from("product-images").upload(path,file,{upsert:false,contentType:file.type||"image/jpeg"});
+  if(error) throw error;
+  const {data}=db.storage.from("product-images").getPublicUrl(path);
+  return data.publicUrl;
+}
+
+async function guardar() {
+  try {
+    msg("Guardando...");
+    const id=document.getElementById("pid").value;
+    const file=document.getElementById("image").files[0];
+    let image_url=null;
+    if(file) image_url=await subirFoto(file);
+
+    const payload={
+      name:document.getElementById("name").value.trim(),
+      category:document.getElementById("category").value.trim()||"General",
+      capacity:document.getElementById("capacity").value.trim(),
+      price:Number(document.getElementById("price").value||0),
+      stock:document.getElementById("stock").value===""?null:Number(document.getElementById("stock").value),
+      colors:document.getElementById("colors").value.trim(),
+      description:document.getElementById("description").value.trim(),
+      active:true
+    };
+    if(!payload.name || !payload.price) throw new Error("Completá nombre y precio.");
+    if(image_url) payload.image_url=image_url;
+
+    let result;
+    if(id) result=await db.from("products").update(payload).eq("id",id);
+    else result=await db.from("products").insert(payload);
+    if(result.error) throw result.error;
+    msg("Producto guardado correctamente.");
+    limpiar();
+    await cargarProductos();
+  } catch(e) { console.error(e); msg("Error: "+e.message); }
+}
+
+async function eliminar(id) {
+  if(!confirm("¿Eliminar este producto?")) return;
+  const {error}=await db.from("products").delete().eq("id",id);
+  if(error) { alert("Error: "+error.message); return; }
+  await cargarProductos();
+}
+
+(async function() {
+  const {data}=await db.auth.getSession();
+  if(data.session) {
+    currentUser=data.session.user;
+    const {data:admin}=await db.from("admins").select("user_id").eq("user_id",currentUser.id).maybeSingle();
+    if(admin) {
+      document.getElementById("login").style.display="none";
+      document.getElementById("app").style.display="block";
+      cargarProductos();
+    }
+  }
+})();
+</script>
+</body>
+</html>

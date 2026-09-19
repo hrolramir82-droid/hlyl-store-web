@@ -1,0 +1,92 @@
+[
+  {
+    "id": "1",
+    "name": "Hoppie 1 litro personalizado",
+    "category": "Hoppies",
+    "capacity": "1 litro",
+    "price": 80000,
+    "image": "images/hoppie-1l.jpg",
+    "customizable": true,
+    "colors": "Consultar disponibilidad"
+  },
+  {
+    "id": "2",
+    "name": "Hoppie 820 ml personalizado",
+    "category": "Hoppies",
+    "capacity": "820 ml",
+    "price": 70000,
+    "image": "images/hoppie-820ml.jpg",
+    "customizable": true,
+    "colors": "Consultar disponibilidad"
+  },
+  {
+    "id": "3",
+    "name": "Hoppie 650 ml personalizado",
+    "category": "Hoppies",
+    "capacity": "650 ml",
+    "price": 65000,
+    "image": "images/hoppie-650ml.jpg",
+    "customizable": true,
+    "colors": "Consultar disponibilidad"
+  },
+  {
+    "id": "4",
+    "name": "Hoppie 400 ml personalizado",
+    "category": "Hoppies",
+    "capacity": "400 ml",
+    "price": 55000,
+    "image": "images/hoppie-400ml.jpg",
+    "customizable": true,
+    "colors": "Consultar disponibilidad"
+  },
+  {
+    "id": "5",
+    "name": "Termo para tereré 2,5 litros",
+    "category": "Termos",
+    "capacity": "2,5 litros",
+    "price": 160000,
+    "image": "images/termo-25l.jpg",
+    "customizable": true,
+    "colors": "Consultar disponibilidad"
+  },
+  {
+    "id": "6",
+    "name": "Termo 1,3 litros personalizado",
+    "category": "Termos",
+    "capacity": "1,3 litros",
+    "price": 125000,
+    "image": "images/termo-13l.jpg",
+    "customizable": true,
+    "colors": "Consultar disponibilidad"
+  },
+  {
+    "id": "7",
+    "name": "Termo tipo galón 2 litros",
+    "category": "Termos",
+    "capacity": "2 litros",
+    "price": 130000,
+    "image": "images/termo-galon-2l.jpg",
+    "customizable": true,
+    "colors": "Consultar disponibilidad"
+  },
+  {
+    "id": "8",
+    "name": "Termo para mate 1 litro",
+    "category": "Termos",
+    "capacity": "1 litro",
+    "price": 100000,
+    "image": "images/termo-mate-1l.jpg",
+    "customizable": true,
+    "colors": "Consultar disponibilidad"
+  },
+  {
+    "id": "9",
+    "name": "Billetera personalizada",
+    "category": "Billeteras",
+    "capacity": "",
+    "price": 110000,
+    "image": "images/billetera.jpg",
+    "customizable": true,
+    "colors": "Consultar disponibilidad"
+  }
+]
